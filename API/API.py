@@ -1,3 +1,4 @@
+import smtplib
 import requests
 import os
 import re
@@ -112,7 +113,7 @@ class Download:
         self.novel_intros = novel_intros
         print(self.novel_intros)
         
-        with open(os.path.join("config", self.bookName + ".json"), 'r', encoding='utf-8', newline='') as fb:
+        with open(os.path.join("config", self.bookName + ".json"), 'r', encoding='gbk', newline='') as fb:
             chapId_list = fb.read()
         if "简介信息" not in chapId_list:
             self.write_json_article(f"\n简介信息:\n{novel_intros}\n")
@@ -134,7 +135,7 @@ class Download:
         self.send_text()
         for chapters in track(catalogue['chapters']):
             chapters_id = str(chapters['link'])
-            with open(os.path.join("config", self.bookName + ".json"), 'r', encoding='utf-8', newline='') as fb:
+            with open(os.path.join("config", self.bookName + ".json"), 'r', encoding='gbk', newline='') as fb:
                 chapId_list = fb.read()
             if chapters_id not in chapId_list:
                 self.write_json_article(f"{chapters_id}\n")
