@@ -1,3 +1,7 @@
+"""
+更新时间：2021年2月15日
+"""
+
 from API import *
 Downloader = API.Download()
 
@@ -5,7 +9,7 @@ intro = """爱下电子书爬虫
 网站地址:https://m.aixdzs.com/
 输入序号
 d | +bookid下载单本小说
-c | +分类号批量下载分类小说
+t | +分类号批量下载分类小说
 h | 获取使用程序帮助
 q | 退出运行的程序
 
