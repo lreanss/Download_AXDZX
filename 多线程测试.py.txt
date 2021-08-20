@@ -1,0 +1,121 @@
+import requests
+import time, os
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED,as_completed
+from time import sleep
+
+class axdzs:
+    #bookid = ""
+    def __init__(self):
+        self.bookid = ''
+        self.bookName = ""
+        self.main_path = ""
+        self.bookName = ""
+        self.charCount = ""
+        self.lastUpdateTime = ""
+        self.authorName = ""
+        self.path_config = os.path.join("config", self.bookName)
+        self.path_novel = os.path.join("novel", self.bookName)
+        self.isFinish = ""
+        self.headers = {'User-Agent' : "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.122 UBrowser/4.0.3214.0 Safari/537.36"}
+    
+
+    def get_bookid(self, bookid):
+        self.bookid = bookid
+        novel_info = requests.get(f'https://api.aixdzs.com/book/{self.bookid}', headers=self.headers).json()
+        self.bookName = novel_info['title']
+
+
+    def new_file(self):
+        if not os.path.exists("novel"):
+            os.mkdir("novel")
+            
+        if not os.path.exists(self.path_config):
+            os.mkdir(self.path_config)
+
+    
+    def write_json_article(self,write_json_info):  # 将信息写入json文件
+        with open(os.path.join("config", self.bookName + ".txt"), 'a', newline='') as fb:
+            fb.write(str(write_json_info))
+
+
+        
+    def filedir(self):
+        meragefiledir = os.path.join("config", self.bookName)  # 获取当前文件夹中的文件名称列表  
+        filenames = os.listdir(meragefiledir)
+        filenames = filenames.split("/")
+        filenames.sort()
+        file = open(os.path.join("novel", f'{self.bookName}.txt'),'a')
+        for filename in filenames:  #先遍历文件名
+            filepath = os.path.join(meragefiledir, filenames)
+            #遍历单个文件，读取行数  
+            for line in open(filepath):  
+                file.writelines(line)  
+            file.write('\n')
+        file.close()
+
+                
+    def chapte(self):
+        url = f'http://api.aixdzs.com/content/{self.bookid}?view=chapter'
+        reps = requests.get(url, headers=self.headers).json()
+        catalogue = reps['mixToc']
+        self.chapters_id_list = []
+        self.number = 0
+        for chapters in catalogue['chapters']:
+            self.number += 1
+            chapters_id = f"{str(self.number)}/{chapters['link']}"
+            print(chapters_id)
+            self.chapters_id_list.append(chapters_id)
+            
+
+    def download(self, url):
+        print(url)
+        self.new_file()
+        urls = url.split('/')
+        chapterid = f"{int(urls[1])}/{int(urls[2])}"
+        print(chapterid)
+
+
+# str = r"1\46\4545"
+# str = str.split("\\")
+# print("list",str)
+# print("type", type(int(str[0])))
+# print("[0]", int(str[0]))
+# print("[1]", int(str[1]))
+# print("[2]", int(str[2]))
+# print("[1][2]", f"{int(str[1])}\\{int(str[2])}")
+
+        url_title_body =f'http://api.aixdzs.com/chapter/{chapterid}'
+        req = requests.get(url_title_body,headers=self.headers).json()
+        self.title = req['chapter']['title']
+        body = req['chapter']['body']
+        print('正在下载: {}'.format(self.title))
+        all = f"\n\n\n{self.title}\n\n{body}"  # 正文内容
+        
+        chapterid = f"{int(urls[0])}/{int(urls[1])}/{int(urls[2])}"
+        # with open(os.path.join("config", self.bookName, urls[0] + ".txt"), 'a', newline='') as fb:
+        with open(os.path.join(self.path_config, ''.join(urls) + ".txt"), 'a', newline='') as fb:
+            fb.write(all)
+        sleep(2)
+        return '{}下载成功'.format(self.title)
+        
+
+    def ThreadPool(self):
+        # 定义线程
+        with ThreadPoolExecutor(max_workers=6) as t:
+            obj_list = []
+            for _url_ in self.chapters_id_list:
+                obj = t.submit(self.download, _url_)
+                obj_list.append(obj)
+            for future in as_completed(obj_list):
+                data = future.result()
+        print('全部下载完成！！！')
+        
+
+try:
+    dow = axdzs()
+    dow.get_bookid("357160")
+    dow.chapte()
+    dow.ThreadPool()
+    dow.filedir()
+except KeyboardInterrupt:
+    quit()
