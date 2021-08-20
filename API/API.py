@@ -5,6 +5,7 @@ import re
 import json
 import random
 import time
+from requests.models import Request, requote_uri
 from rich.progress import track
 from rich import print
 from rich.console import Console
@@ -64,20 +65,25 @@ class Download:
         return self.headers
 
 
+    def get_requests(self, api):
+        requ = requests.get(url=api, headers=self.headers)
+        return requ
+    
+    
         
         
     def get_bookid(self,bookid):
         self.user_agent_list()
         self.bookid = bookid
-        novel_info = requests.get(f'https://api.aixdzs.com/book/{self.bookid}', headers=self.headers).json()
-        self.bookName = novel_info['title']
-        self.authorName = novel_info['author']
-        self.isFinish = novel_info['zt']
-        self.charCount = novel_info['wordCount']
-        self.lastUpdateTime_chap = novel_info['lastChapter']
-        self.novel_tag = novel_info['cat'] 
-        self.lastUpdateTime = novel_info['updated']  # 最后更新章节
-        self.novel_intro = novel_info['longIntro']  # 简介
+        url = f'https://api.aixdzs.com/book/{self.bookid}'
+        self.bookName = self.get_requests(url)['title']
+        self.authorName = self.get_requests(url)['author']
+        self.isFinish = self.get_requests(url)['zt']
+        self.charCount = self.get_requests(url)['wordCount']
+        self.lastUpdateTime_chap = self.get_requests(url)['lastChapter']
+        self.novel_tag = self.get_requests(url)['cat'] 
+        self.lastUpdateTime = self.get_requests(url)['updated']  # 最后更新章节
+        self.novel_intro = self.get_requests(url)['longIntro']  # 简介
         
             
     def new_file(self):
@@ -128,8 +134,8 @@ class Download:
 
     def download_book(self):
         self.user_agent_list()
-        reps = requests.get(f'http://api.aixdzs.com/content/{self.bookid}?view=chapter', headers=self.headers).json()
-        catalogue = reps['mixToc']
+        url = f'http://api.aixdzs.com/content/{self.bookid}?view=chapter'
+        catalogue = self.get_requests(url)['mixToc']
         number = 0
         self.intro_info()
         self.send_text()
@@ -140,9 +146,9 @@ class Download:
             if chapters_id not in chapId_list:
                 self.write_json_article(f"{chapters_id}\n")
                 number += 1
-                novel_article = requests.get(f'http://api.aixdzs.com/chapter/{chapters_id}', headers=self.headers).json()
-                novel_title = novel_article['chapter']['title']
-                novel_body = novel_article['chapter']['body']
+                url = f'http://api.aixdzs.com/chapter/{chapters_id}'
+                novel_title = self.get_requests(url)['chapter']['title']
+                novel_body = self.get_requests(url)['chapter']['body']
                 title_body = f"\n\n\n{novel_title}\n{novel_body}"
                 self.write_novel_article(title_body)
             else:
@@ -153,8 +159,10 @@ class Download:
     def search_book(self):
         self.user_agent_list()
         book = input('input book name:')
-        search = requests.get(f'http://api.aixdzs.com/book/search?query={book}', headers=self.headers).json()
-        print(search)
+        while not book:
+            book = input("input book name:")
+        url = f'http://api.aixdzs.com/book/search?query={book}'
+        print(self.get_requests(url))
         
 
     def get_book_list(self, dict_number):
@@ -164,22 +172,18 @@ class Download:
         for i in range(10000):
             number += 20
             url = "http://api.aixdzs.com/book-sort?gender=6&type=hot&major={}&minor=&start={}&limit=20".format(
-                    self.type_dict[int(dict_number)], number)
-            novel_info = requests.get(url, headers=self.headers).json()
-            for data in novel_info['books']:
+                  self.type_dict[int(dict_number)], number)
+            for data in self.get_requests(url)['books']:
                 self.bookid = data['_id']
                 book_title = data['title']
             book_url_ID_list.append(self.bookid)
-            # with open(os.path.join('novel', f"list.txt"), 'a', newline='') as fb:
-                # fb.write(book_url_ID_list)
-            # print(book_url_ID_list)
             self.get_bookid(self.bookid)
             start = time.time()
             self.download_book()
             end = time.time()
             print(f'下载耗时:{round(end - start, 2)} 秒')
             with open(os.path.join('novel', f"list.txt"), 'a', newline='') as fb:
-                json.dump(novel_info, fb, ensure_ascii=False, indent=4)
+                json.dump(self.get_requests(url), fb, ensure_ascii=False, indent=4)
                 
 
 
@@ -187,7 +191,7 @@ class Download:
         host_server = 'smtp.163.com'
         pwd = 'ha8277'
         sender = 'jiang47475tan87@163.com'
-        receiver = '' # input you email
+        receiver = 'jiang47475tan87@163.com' # input you email
         mail_content = f"{self.novel_intros}"
         mail_title = f"开始下载小说:{self.bookName}"
         msg = MIMEText(mail_content, 'plain', 'utf-8')
@@ -210,7 +214,7 @@ class Download:
         host_server = 'smtp.163.com'
         pwd = 'ha8277'
         sender = 'jiang47475tan87@163.com'
-        receiver = '' # input you email
+        receiver = 'jiang47475tan87@163.com' # input you email
         txt_file = os.path.join('novel', f"{self.bookName}.txt")
         txtApart = MIMEApplication(open(txt_file, 'rb').read())
         txtApart.add_header('Content-Disposition', 'attachment', filename=f"{self.bookName}.txt")
@@ -230,16 +234,18 @@ class Download:
             print('error:',e) #打印错误
 
 
-    # def get_type(self):
-        # self.user_agent_list()
-        # type_dict = {}
-        # type_dict_number = 0
-        # get_type_reps = requests.get('http://api.aixdzs.com/sort/lv2', headers=self.headers).json()
-        # for i in get_type_reps['male']:
-            # type_dict_number += 1
-            # major = i['major']
-            # type_dict[type_dict_number] = major
-        # print(type_dict)
+    
+    def get_type(self):
+        self.user_agent_list()
+        type_dict = {}
+        type_dict_number = 0
+        
+        url = 'http://api.aixdzs.com/sort/lv2'
+        for sort in self.get_requests(url)['male']:
+            type_dict_number += 1
+            major = sort['major']
+            type_dict[type_dict_number] = major
+        print(type_dict)
         
         
 
