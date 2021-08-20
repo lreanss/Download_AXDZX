@@ -43,7 +43,7 @@ class Download:
 
 
     def get_requests(self, api):
-        requ = requests.get(url=api, headers=self.headers)
+        requ = requests.get(url=api, headers=self.headers).json()
         return requ
     
     
