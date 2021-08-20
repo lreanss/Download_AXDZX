@@ -1,25 +1,37 @@
-"""
-更新时间：2021年2月15日
-"""
-
+import time
+import os
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED, as_completed
+from time import sleep
 from API import *
+from API.headers import *
 Downloader = API.Download()
 
-intro = """爱下电子书爬虫
-网站地址:https://m.aixdzs.com/
-输入序号
-d | +bookid下载单本小说
-t | +分类号批量下载分类小说
-h | 获取使用程序帮助
-q | 退出运行的程序
 
-"""
-
-tpye_intro = """1: '玄幻', 2: '奇幻', 3: '武侠', 4: '仙侠', 5: '都市',
-6: '职场', 7: '历史', 8: '军事', 9: '游戏', 10: '竞技', 
-11: '科幻', 12: '灵异', 13: '同人', 14: '轻小说'"""
+intro = intro_dict
+tpye_intro = tpye_intro_dict
 
 
+def ThreadPool(self):  # 定义线程
+    with ThreadPoolExecutor(max_workers=6) as t:
+        obj_list = []
+        for _url_ in self.chapters_id_list:
+            obj = t.submit(self.download, _url_)
+            obj_list.append(obj)
+        for future in as_completed(obj_list):
+            data = future.result()
+    print('全部下载完成！！！')
+        
+def get_bookid(inputs):
+    if len(inputs) >= 2:
+        
+        start = time.time()
+        url = 'http://api.aixdzs.com/content/{}?view=chapter'.format(inputs[1])
+        Downloader.get_requests(url)
+        Downloader.download_book()
+        end = time.time()
+        print(f'下载耗时:{round(end - start, 2)} 秒')
+        
+        
 def get(prompt, default=None):
     while True:
         ret = input(prompt)
@@ -27,6 +39,7 @@ def get(prompt, default=None):
             return ret
         elif default is not None:
             return default
+
 
 
 def shell_book(inputs):
@@ -52,7 +65,6 @@ def shell_list_class(inputs):
 
 def shell():
     loop = True
-    save = False
     print(intro)
     if len(sys.argv) > 1:
         inputs = sys.argv[1:]
@@ -67,8 +79,6 @@ def shell():
             shell_list_class(inputs)
         elif inputs[0].startswith('d'):
             shell_book(inputs)
-        # elif inputs[0].startswith('t'):
-            # shell_get_type(inputs)
         else:
             pass
         if loop is False:
