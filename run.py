@@ -1,27 +1,5 @@
-from API.api import Download
-import time
-import re
-import sys
-import time
-import os
+from API import *
 Downloader = Download()
-
-
-intro_dict = """https://m.aixdzs.com/
-d | +bookid下载单本小说
-t | +分类号批量下载分类小说
-h | 获取使用程序帮助
-q | 退出运行的程序"""
-
-
-def get(prompt, default=None):
-    while True:
-        ret = input(prompt)
-        if ret != '':
-            return ret
-        elif default is not None:
-            return default
-
 
 def shell_book(inputs):
     if len(inputs) >= 2:
