@@ -1,25 +1,23 @@
 
-type_dict = {
-    1: '玄幻', 2: '奇幻', 3: '武侠', 4: '仙侠', 5: '都市',
-    6: '职场', 7: '历史', 8: '军事', 9: '游戏', 10: '竞技', 
-    11: '科幻', 12: '灵异', 13: '同人', 14: '轻小说'
-}
-
-intro_dict = """爱下电子书爬虫
-网站地址:https://m.aixdzs.com/
-输入序号
-d | +bookid下载单本小说
-t | +分类号批量下载分类小说
-h | 获取使用程序帮助
-q | 退出运行的程序"""
+def get(prompt, default=None):
+    while True:
+        ret = input(prompt)
+        if ret != '':
+            return ret
+        elif default is not None:
+            return default
 
 
-tpye_intro_dict = """1: '玄幻', 2: '奇幻', 3: '武侠', 4: '仙侠', 5: '都市',
-6: '职场', 7: '历史', 8: '军事', 9: '游戏', 10: '竞技', 
-11: '科幻', 12: '灵异', 13: '同人', 14: '轻小说'"""
+intro_dict = """https://m.aixdzs.com/
+d | bookid\t\t\t———下载单本小说
+t | 分类号\t\t\t———批量下载分类小说
+s | 书名\t\t\t———下载单本小说
+h | help\t\t\t———获取使用程序帮助
+q | quit\t\t\t———退出运行的程序"""
 
+headers = {'User-Agent' : None}
 
-user_agent_list = [
+USER_AGENT_LIST = [
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.122 UBrowser/4.0.3214.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1",
     "Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",
