@@ -1,5 +1,7 @@
 from API import *
 Downloader = Download()
+new_file_settings_json()
+settings = read_settings_info()
 
 def shell_book(inputs):
     if len(inputs) >= 2:
@@ -20,7 +22,45 @@ def shell_search_book(inputs):
         print(f'下载耗时:{round(end - start, 2)} 秒')
     else:
         print('未输入书名')
+        
+       
 
+def get(prompt, default=None):
+    while True:
+        ret = input(prompt)
+        if ret != '':
+            return ret
+        elif default is not None:
+            return default
+            
+def get_epub(inputs):
+    """设置布尔值，默认为True"""
+    if len(inputs) >= 2:
+        if inputs[1] == 'f':
+            """将布尔值设置为False"""
+            settings['info_msg']['Epub'] = False
+            write_settings_info(settings)
+            print("布尔值已设置为False")
+        elif inputs[1] == 't':
+            """将布尔值设置为True"""
+            settings['info_msg']['Epub'] = True
+            write_settings_info(settings)
+            print("布尔值已设置为False")
+    else:
+        print("布尔值为", settings['info_msg']['Epub'])  # 打印布尔值
+        
+def get_pool(inputs):
+    if len(inputs) >= 2:
+        if inputs[1].isdigit():
+            Downloader.Pool = int(inputs[1])
+            settings['info_msg']['Thread_Pool'] = Downloader.Pool
+            write_settings_info(settings)
+            print("线程已设置为", Downloader.Pool)
+
+        else:
+            print("设置失败，输入信息不是数字")
+    else:
+        print("默认线程为", Downloader.Pool)
         
 def shell_list_class(inputs):
     if len(inputs) >= 2:
@@ -29,18 +69,16 @@ def shell_list_class(inputs):
         except ValueError:
             print('输入不规范，请输入数字')
             return
-            
-        tag_dict = Downloader.get_type()
-        if dict_number not in tag_dict:
-            print(f"服务器内不存在{dict_number}这个标签号\n", tag_dict)
+        tag_dict = settings['help_msg']['tag']
+        if inputs[1] not in tag_dict:
+            print(f"{dict_number} 标签号不存在\n", tag_dict)
         else:
-            Downloader.get_book_list(dict_number)
+            print(Downloader.get_book_list(dict_number))
     else:
-        print(Downloader.get_type())
+        print(settings['help_msg']['tag'])
 
 def shell():
-    loop = True
-    print(intro_dict)
+    print(settings['help_msg']['help'])
     if len(sys.argv) > 1:
         inputs = sys.argv[1:]
     else:
@@ -49,18 +87,20 @@ def shell():
         if inputs[0].startswith('q'):
             print("已退出程序")
             sys.exit()
-        elif inputs[0].startswith('h'):
-            print(intro_dict, Downloader.get_type())
-        elif inputs[0].startswith('t'):
+        elif inputs[0] == 'h':
+            print(settings['help_msg']['help'])
+        elif inputs[0] == 't':
             shell_list_class(inputs)
-        elif inputs[0].startswith('d'):
+        elif inputs[0] == 'd':
             shell_book(inputs)
-        elif inputs[0].startswith('s'):
+        elif inputs[0] == 's':
             shell_search_book(inputs)
+        elif inputs[0] == 'p':
+            get_pool(inputs)
+        elif inputs[0] == 'e':
+            get_epub(inputs)
         else:
-            pass
-        if loop is False:
-            break
+            print(inputs[0], '不是有效命令')
         inputs = re.split('\\s+', get('>').strip())
 
 
