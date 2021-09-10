@@ -1,34 +1,35 @@
 import json
 import random
 import requests
-import time, os
+import re, time, os
+# from ebooklib import epub
 from .headers import *
+from .config_file import *
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED, as_completed
 from time import sleep
 
+new_file_settings_json()
+settings = read_settings_info()
+USER_AGENT_LIST = random.choice(settings['info_msg']['USER_AGENT_LIST'])
 
 class Download():
-    headers['User-Agent'] = random.choice(USER_AGENT_LIST)
-    
+    headers['User-Agent'] = USER_AGENT_LIST
     def __init__(self):
         self.bookid = ''
         self.bookName = ""
-        self.main_path = ""
+        self.novel_intro = ""
         self.bookName = ""
         self.charCount = ""
+        self.Pool = settings['info_msg']['Thread_Pool']
         self.lastUpdateTime = ""
         self.authorName = ""
         self.path_config = os.path.join("config", self.bookName)
         self.path_novel = os.path.join("novel", self.bookName)
         self.headers = headers
         
-        
+ 
 
-    # def user_agent_list(self):
-    #     self.headers['User-Agent'] = random.choice(self.USER_AGENT_LIST)
-    #     return self.headers
-    
-    
+
     def get_requests(self, api):
         """get.requests(url, headers)"""
         """api ([str]): [api_url]    """
@@ -67,8 +68,10 @@ class Download():
         self.lastUpdateTime_chap = self.get_requests(novel_api)['lastChapter']
         self.novel_tag = self.get_requests(novel_api)['cat']
         self.lastUpdateTime = self.get_requests(novel_api)['updated']  # 最后更新章节
-        self.novel_intro = self.get_requests(novel_api)['longIntro']  # 简介
-        
+        for novel_intro in self.get_requests(novel_api)['longIntro'].split("\n"):
+            novel_intro = re.sub(r'^\s*', "\n", novel_intro)
+            if re.search(r'\S', novel_intro) != None:
+                self.novel_intro += novel_intro
         """检查 novel config文件夹是否存在主目录"""
         self.os_mkdir("novel")
         self.os_mkdir("config")
@@ -126,30 +129,7 @@ class Download():
         return '{}下载成功'.format(self.title)
 
 
-    def ThreadPool(self):
-        self.os_meragefiledir()
-        with ThreadPoolExecutor(max_workers=6) as t:
-            obj_list = []
-            for url in self.chapters_id_list:
-                """url          小说完整序号"""
-                """len_number   小说单章号码"""
-                """filenames    小说单章名字"""
-                len_number = url.split('/')[1]
-                filenames = self.os_meragefiledir()
 
-                """跳过已经下载的章节"""
-                if len_number in ''.join(filenames):
-                    print(len_number, '已经下载过')
-                    continue
-                else:
-                    obj = t.submit(self.download, url, len_number)
-                    obj_list.append(obj)
-            for future in as_completed(obj_list):
-                data = future.result()
-
-        with open(os.path.join("novel", self.bookName + '.txt'), 'w') as f:
-            self.filedir()
-            print(self.bookName, '下载完成')
 
     def get_type(self):
         self.type_dict = {}
@@ -188,3 +168,28 @@ class Download():
 
             else:
                 print('此分类小说已经下载完毕'); break
+                
+    def ThreadPool(self):
+        self.os_meragefiledir()
+        with ThreadPoolExecutor(max_workers=self.Pool) as t:
+            obj_list = []
+            for url in self.chapters_id_list:
+                """url          小说完整序号"""
+                """len_number   小说单章号码"""
+                """filenames    小说单章名字"""
+                len_number = url.split('/')[1]
+                filenames = self.os_meragefiledir()
+
+                """跳过已经下载的章节"""
+                if len_number in ''.join(filenames):
+                    print(len_number, '已经下载过')
+                    continue
+                else:
+                    obj = t.submit(self.download, url, len_number)
+                    obj_list.append(obj)
+            for future in as_completed(obj_list):
+                data = future.result()
+
+        with open(os.path.join("novel", self.bookName + '.txt'), 'w') as f:
+            self.filedir()
+            print(self.bookName, '下载完成')
