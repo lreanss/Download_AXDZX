@@ -1,18 +1,20 @@
 import json
 import random
 import requests
+import sys
 import re, time, os
-# from ebooklib import epub
-from .headers import *
 from .config_file import *
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED, as_completed
 from time import sleep
 
 new_file_settings_json()
+
 settings = read_settings_info()
+headers = settings['headers'] 
 USER_AGENT_LIST = random.choice(settings['info_msg']['USER_AGENT_LIST'])
 
 class Download():
+
     headers['User-Agent'] = USER_AGENT_LIST
     def __init__(self):
         self.bookid = ''
@@ -120,8 +122,10 @@ class Download():
         self.title = chapters['chapter']['title']  # 小说标题
         body = chapters['chapter']['body']  # 小说正文
         title_body = f"\n\n\n{self.title}\n\n{body}"  # 标题加正文
-        print('正在下载: {}'.format(self.title))
-        
+        # print('正在下载: {}'.format(self.title))
+        sys.stdout.write('\n{}/{}\t{}'.format(
+                int(len_number) -1, len(self.chapters_id_list), self.title))
+        sys.stdout.flush()
         """标题和正文信息存储到number.txt并保存\config\bookName中"""
         with open(os.path.join("config", self.bookName, f"{len_number}.txt"), 'a', newline='') as fb:
             fb.write(title_body)
@@ -155,8 +159,9 @@ class Download():
         tag_id_list = []
         for i in range(10000):
             number += 20
-            url = "http://api.aixdzs.com/book-sort?gender=6&type=hot&major={}&minor=&start={}&limit=20".format(
-                  _dict_[dict_number], number)
+            print("开始下载", _dict_[dict_number], "分类")
+            url = "http://api.aixdzs.com/book-sort?gender={}&type=hot&major={}&minor=&start={}&limit=20".format(
+                  dict_number, _dict_[dict_number], number)
             if self.get_requests(url)['books']:
                 for data in self.get_requests(url)['books']:
                     tag_id = data['_id']
@@ -179,17 +184,24 @@ class Download():
                 """filenames    小说单章名字"""
                 len_number = url.split('/')[1]
                 filenames = self.os_meragefiledir()
-
                 """跳过已经下载的章节"""
                 if len_number in ''.join(filenames):
                     print(len_number, '已经下载过')
                     continue
                 else:
+                    
                     obj = t.submit(self.download, url, len_number)
+                    
                     obj_list.append(obj)
             for future in as_completed(obj_list):
                 data = future.result()
 
         with open(os.path.join("novel", self.bookName + '.txt'), 'w') as f:
             self.filedir()
-            print(self.bookName, '下载完成')
+            print(f'\n小说 {self.bookName} 下载完成')
+            
+            # 
+# for i in range(len(self.chapters_id_list)):
+    # sys.stdout.write('\r%s%%'%(i+1))
+    # sys.stdout.flush()
+    # time.sleep(0.1)

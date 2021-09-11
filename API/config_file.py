@@ -21,6 +21,7 @@ def new_file_settings_json():
             'help': 'https://m.aixdzs.com/\nd | bookid\t\t\t———下载单本小说\nt | 分类号\t\t\t———批量下载分类小说\ns | 书名\t\t\t———下载单本小说\nh | help\t\t\t———获取使用程序帮助\nq | quit\t\t\t———退出运行的程序',
             'tag': {1: '玄幻', 2: '奇幻', 3: '武侠', 4: '仙侠', 5: '都市', 6: '职场', 7: '历史', 8: '军事', 9: '游戏', 10: '竞技', 11: '科幻', 12: '灵异', 13: '同人', 14: '轻小说'}
             }
+        settings_info['headers'] = {}
         settings_info['info_msg'] = {
             'Thread_Pool': 6, 
             'Epub': 'True',
