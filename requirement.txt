@@ -1,4 +1,5 @@
 request
 random
 rich
-
+EbookLib
+pyyaml
