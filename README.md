@@ -9,6 +9,7 @@
 <li>通过Bookid下载小说</li>
 <li>通过书名下载小说</li>
 <li>通过分类序号批量下载小说</li>
+<li>支持epub格式下载</li>
 <li>邮件推送下载信息，文本附件【暂时只在单线程版本支持】</li>
 <li>请分别在189行和216行输入收件邮箱</li>
 <li>已提供了一个临时Email用作发送文件，使用者可自行替换发送Email的账号和密码</li>
@@ -32,6 +33,10 @@
 
 <li>os</li>
 
+<li>EbookLib</li>
+  
+<li>pyyaml</li>
+  
 <li>time</li>
 
 <li>sys</li>
