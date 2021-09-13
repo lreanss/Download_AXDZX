@@ -1,13 +1,20 @@
 from API import *
+from multiprocessing import Pool, Manager
+
 Downloader = Download()
 new_file_settings_json()
 settings = read_settings_info()
+Epub = settings['info_msg']['Epub']
 
 def shell_book(inputs):
+    """通过小说ID下载单本小说"""
     if len(inputs) >= 2:
         start = time.time()
-        Downloader.get_bookid(inputs[1])
-        Downloader.ThreadPool()
+        if Epub:
+            Downloader.get_bookid(inputs[1])
+            Downloader.ThreadPool()
+        else:
+            Downloader.download2epub(inputs[1])
         end = time.time()
         print(f'下载耗时:{round(end - start, 2)} 秒')
     else:
@@ -15,9 +22,10 @@ def shell_book(inputs):
 
 
 def shell_search_book(inputs):
+    """搜索书名下载小说"""
     if len(inputs) >= 2:
         start = time.time()
-        Downloader.search_book(inputs[1])
+        Downloader.search_book(inputs[1], Epub)
         end = time.time()
         print(f'下载耗时:{round(end - start, 2)} 秒')
     else:
@@ -36,16 +44,19 @@ def get(prompt, default=None):
 def get_epub(inputs):
     """设置布尔值，默认为True"""
     if len(inputs) >= 2:
+        global Epub
         if inputs[1] == 'f':
             """将布尔值设置为False"""
+            Epub = False
             settings['info_msg']['Epub'] = False
             write_settings_info(settings)
-            print("布尔值已设置为False")
+            print("已设置为下载epub")
         elif inputs[1] == 't':
             """将布尔值设置为True"""
             settings['info_msg']['Epub'] = True
+            settings['info_msg']['Epub'] = True
             write_settings_info(settings)
-            print("布尔值已设置为False")
+            print("已设置为下载TXT")
     else:
         print("布尔值为", settings['info_msg']['Epub'])  # 打印布尔值
         
@@ -73,7 +84,7 @@ def shell_list_class(inputs):
         if inputs[1] not in tag_dict:
             print(f"{dict_number} 标签号不存在\n", tag_dict)
         else:
-            print(Downloader.get_book_list(dict_number))
+            Downloader.download_tags(dict_number, Epub)
     else:
         print(settings['help_msg']['tag'])
 
