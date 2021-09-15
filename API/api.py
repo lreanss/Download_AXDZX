@@ -22,7 +22,6 @@ class Download():
         self.bookid = ''
         self.bookName = ""
         self.novel_intro = ""
-        self.bookName = ""
         self.charCount = ""
         self.Pool = settings['info_msg']['Thread_Pool']
         self.lastUpdateTime = ""
@@ -42,6 +41,10 @@ class Download():
     def os_mkdir(self, path_):
         if not os.path.exists(path_):
             os.mkdir(path_)
+
+    def os_mkdirs(self, path_1, path_2):
+        if not os.path.exists(os.path.join(path_1, path_2)):
+            os.mkdir(os.path.join(path_1, path_2))
 
     def intro_info(self):
         """打印小说信息"""
@@ -195,9 +198,7 @@ class Download():
                     # print(len_number, '已经下载过')
                     continue
                 else:
-                    
                     obj = t.submit(self.download, url, len_number)
-                    
                     obj_list.append(obj)
             for future in as_completed(obj_list):
                 data = future.result()
@@ -208,14 +209,16 @@ class Download():
             
 
     def writeEpubPoint(self,downloaded_list):
-        with open("./epub/" + self.bookName +'/' + self.bookName + ".yaml", "w", encoding="utf-8") as yaml_file:
+        save_epub_path = os.path.join("epub", self.bookName, f"{self.bookName}.yaml")
+        with open(save_epub_path, "w", encoding="utf-8") as yaml_file:
             yaml.dump(downloaded_list, yaml_file, allow_unicode=True)
             
             
     def readEpubPoint(self):
         downloadedList = []
-        if os.path.exists("./epub/" + self.bookName +'/' + self.bookName + ".yaml"):
-            with open("./epub/" + self.bookName +'/' + self.bookName + ".yaml", "r", encoding="utf-8") as yaml_file:
+        save_epub_path = os.path.join("epub", self.bookName, f"{self.bookName}.yaml")
+        if os.path.exists(save_epub_path):
+            with open(save_epub_path, "r", encoding="utf-8") as yaml_file:
                 downloadedList = yaml.load(yaml_file.read())
         return downloadedList
 
@@ -241,8 +244,6 @@ class Download():
             os.mkdir('./epub/' + self.bookName)
         downloadedList = self.readEpubPoint()
         C = [None] * len(self.chapters_id_list)
-
-        print(self.bookName)
         # if len(downloadedList) == 0:
         #     coverimg = requests.get(f"http://img22.aixdzs.com/{self.cover}", self.headers)
         #     if not os.path.exists('.//JPG//' + self.bookName + '.jpg'):
@@ -270,9 +271,8 @@ class Download():
         #                                 content=default_style)
 
         x = 0
-        for chapterid in self.chapters_id_list:
-            
-            # 断点下载
+        for chapterid in track(self.chapters_id_list):
+            """断点下载，跳过已经存在本地的章节id"""
             if chapterid in downloadedList:
                 continue
             chapters = self.get_requests(f'http://api.aixdzs.com/chapter/{chapterid}')
@@ -283,8 +283,7 @@ class Download():
             text = chapters['chapter']['body']  # 获取正文
             text_list = text.split('\n')
             for t in text_list:
-                if chapter_title in t:
-                    # 在正文中移除标题
+                if chapter_title in t:  # 在正文中移除标题
                     continue
                 if '[img' in t[:5]:
                     continue
@@ -300,57 +299,57 @@ class Download():
 
         else:
             print("全本小说已经下载完成")
-        u = []
-        if C[0] is None:
-            return 1
-        for c in C:
-            if c is None:
-                break
-            book.add_item(c)
-            u.append(c)
-        if ic is None:
-            c_f = tuple(u)
-            book.toc.extend(c_f)
-            book.spine.extend(u)
-            book.items.remove(book.get_item_with_id('ncx'))
-            book.items.remove(book.get_item_with_id('nav'))
-            book.add_item(epub.EpubNcx())
-            book.add_item(epub.EpubNav())
-            epub.write_epub('./epub/' + self.bookName + '/' + self.bookName + '.epub', book, {})
-            #print(downloadedList)
-            self.writeEpubPoint(downloadedList)
-        else:
-            c_f = tuple([ic] + u)
-            
-            book.toc = c_f
-            book.add_item(epub.EpubNcx())
-            book.add_item(epub.EpubNav())
-            style = '''
-            body {
-                font-family: Auto;
-            }
-            h2 {
-                 text-align: left;
-                 text-transform: uppercase;
-                 font-weight: 200;     
-            }
-            ol {
-                    list-style-type: none;
-            }
-            ol > li:first-child {
-                    margin-top: 0.3em;
-            }
-            nav[epub|type~='toc'] > ol > li > ol  {
-                list-style-type:square;
-            }
-            nav[epub|type~='toc'] > ol > li > ol > li {
-                    margin-top: 0.3em;
-            }
-            '''
-            nav_css = epub.EpubItem(uid="style_nav", file_name="style/nav.css", media_type="text/css", content=style)
-            book.add_item(nav_css)
-            book.spine = ['nav',ic]
-            book.spine.extend(u)
-            epub.write_epub('./epub/' + self.bookName + '/' + self.bookName + '.epub', book, {})
-            self.writeEpubPoint(downloadedList)
+        # u = []
+        # if C[0] is None:
+            # return 1
+        # for c in C:
+            # if c is None:
+                # break
+            # book.add_item(c)
+            # u.append(c)
+        # if ic is None:
+            # c_f = tuple(u)
+            # book.toc.extend(c_f)
+            # book.spine.extend(u)
+            # book.items.remove(book.get_item_with_id('ncx'))
+            # book.items.remove(book.get_item_with_id('nav'))
+            # book.add_item(epub.EpubNcx())
+            # book.add_item(epub.EpubNav())
+            # epub.write_epub('./epub/' + self.bookName + '/' + self.bookName + '.epub', book, {})
+            # #print(downloadedList)
+            # self.writeEpubPoint(downloadedList)
+        # else:
+            # c_f = tuple([ic] + u)
+            # 
+            # book.toc = c_f
+            # book.add_item(epub.EpubNcx())
+            # book.add_item(epub.EpubNav())
+            # style = '''
+            # body {
+                # font-family: Auto;
+            # }
+            # h2 {
+                 # text-align: left;
+                 # text-transform: uppercase;
+                 # font-weight: 200;     
+            # }
+            # ol {
+                    # list-style-type: none;
+            # }
+            # ol > li:first-child {
+                    # margin-top: 0.3em;
+            # }
+            # nav[epub|type~='toc'] > ol > li > ol  {
+                # list-style-type:square;
+            # }
+            # nav[epub|type~='toc'] > ol > li > ol > li {
+                    # margin-top: 0.3em;
+            # }
+            # '''
+            # nav_css = epub.EpubItem(uid="style_nav", file_name="style/nav.css", media_type="text/css", content=style)
+            # book.add_item(nav_css)
+            # book.spine = ['nav',ic]
+            # book.spine.extend(u)
+            # epub.write_epub('./epub/' + self.bookName + '/' + self.bookName + '.epub', book, {})
+            # self.writeEpubPoint(downloadedList)
             
