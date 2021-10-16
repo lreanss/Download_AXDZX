@@ -4,31 +4,29 @@ import sys, json
 import re, time, os
 import yaml
 from ebooklib import epub
-from .config_file import *
+from .config_file import SettingConfig
 from rich.progress import track
+from rich import print
 from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED, as_completed
 from time import sleep
 
-new_file_settings_json()
-
-settings = read_settings_info()
-headers = settings['headers'] 
-USER_AGENT_LIST = random.choice(settings['info_msg']['USER_AGENT_LIST'])
-
+Setting = SettingConfig()
+# Setting.setup_config()
+Read = Setting.ReadSetting()
 class Download():
-
-    headers['User-Agent'] = USER_AGENT_LIST
     def __init__(self):
         self.bookid = ''
         self.bookName = ""
         self.novel_intro = ""
         self.charCount = ""
-        self.Pool = settings['info_msg']['Thread_Pool']
         self.lastUpdateTime = ""
         self.authorName = ""
         self.path_config = os.path.join("config", self.bookName)
         self.path_novel = os.path.join("novel", self.bookName)
-        self.headers = headers
+        self.headers = {
+            "User_Agent": "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.122 UBrowser/4.0.3214.0 Safari/537.36"
+            }
+        # {random.choice(Setting.ReadSetting().get('USER_AGENT_LIST'))}
         
  
 
@@ -144,9 +142,11 @@ class Download():
         type_dict_number = 0
         url = 'http://api.aixdzs.com/sort/lv2'
         for sort in self.get_requests(url)['male']:
+            print(sort)
             type_dict_number += 1
             major = sort['major']
             self.type_dict[type_dict_number] = major
+        
         return self.type_dict
         
     def search_book(self, bookname, Epub):
@@ -161,12 +161,12 @@ class Download():
             self.download2epub(bookid)
 
     def download_tags(self, dict_number, Epub):
-        dict_data, tag_id_list, number = self.get_type(), [], 1
-        for i in range(10000):
+        dict_data = Read.get('tag').get(dict_number)
+        for number, i in enumerate(range(10000)):
             number += 20
-            print("开始下载", dict_data[dict_number], "分类")
+            print("开始下载", dict_data, "分类")
             url = "http://api.aixdzs.com/book-sort?gender={}&type=hot&major={}&minor=&start={}&limit=20".format(
-                  dict_number, dict_data[dict_number], number)
+                  dict_number,dict_data, number)
             if self.get_requests(url)['books']:
                 for data in self.get_requests(url)['books']:
                     tag_id = data['_id']
@@ -184,7 +184,7 @@ class Download():
                 
     def ThreadPool(self):
         self.os_meragefiledir()
-        with ThreadPoolExecutor(max_workers=self.Pool) as t:
+        with ThreadPoolExecutor(max_workers=Setting.ReadSetting().get('Thread_Pool')) as t:
             obj_list = []
             for url in track(self.chapters_id_list):
                 """url          小说完整序号"""
@@ -299,57 +299,7 @@ class Download():
 
         else:
             print("全本小说已经下载完成")
-        # u = []
-        # if C[0] is None:
-            # return 1
-        # for c in C:
-            # if c is None:
-                # break
-            # book.add_item(c)
-            # u.append(c)
-        # if ic is None:
-            # c_f = tuple(u)
-            # book.toc.extend(c_f)
-            # book.spine.extend(u)
-            # book.items.remove(book.get_item_with_id('ncx'))
-            # book.items.remove(book.get_item_with_id('nav'))
-            # book.add_item(epub.EpubNcx())
-            # book.add_item(epub.EpubNav())
-            # epub.write_epub('./epub/' + self.bookName + '/' + self.bookName + '.epub', book, {})
-            # #print(downloadedList)
-            # self.writeEpubPoint(downloadedList)
-        # else:
-            # c_f = tuple([ic] + u)
-            # 
-            # book.toc = c_f
-            # book.add_item(epub.EpubNcx())
-            # book.add_item(epub.EpubNav())
-            # style = '''
-            # body {
-                # font-family: Auto;
-            # }
-            # h2 {
-                 # text-align: left;
-                 # text-transform: uppercase;
-                 # font-weight: 200;     
-            # }
-            # ol {
-                    # list-style-type: none;
-            # }
-            # ol > li:first-child {
-                    # margin-top: 0.3em;
-            # }
-            # nav[epub|type~='toc'] > ol > li > ol  {
-                # list-style-type:square;
-            # }
-            # nav[epub|type~='toc'] > ol > li > ol > li {
-                    # margin-top: 0.3em;
-            # }
-            # '''
-            # nav_css = epub.EpubItem(uid="style_nav", file_name="style/nav.css", media_type="text/css", content=style)
-            # book.add_item(nav_css)
-            # book.spine = ['nav',ic]
-            # book.spine.extend(u)
-            # epub.write_epub('./epub/' + self.bookName + '/' + self.bookName + '.epub', book, {})
-            # self.writeEpubPoint(downloadedList)
-            
+# if __name__ == '__main__':
+    # Download = Download()
+
+    
