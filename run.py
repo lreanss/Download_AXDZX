@@ -106,4 +106,4 @@ if __name__ == '__main__':
     Setting.setup_config()
     Read = Setting.ReadSetting()
     
-shell()
+    shell()
