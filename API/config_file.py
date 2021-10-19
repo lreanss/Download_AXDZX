@@ -6,19 +6,21 @@ class SettingConfig():
     
     def __init__(self):
         self.path = os.getcwd()
+        self.settings_path = os.path.join(self.path, 'settings.json')
 
     def WriteSettings(self, info):
         """更新settings.json文件"""
-        with open(os.path.join('settings.json'), 'w', encoding='utf-8') as file:
+        with open(self.settings_path, 'w', encoding='utf-8') as file:
             write_setting_info = file.write(
                 json.dumps(info))
         return write_setting_info
 
     def ReadSetting(self):
-        if not os.path.isfile(os.path.join(self.path, 'settings.json')):
-            open(os.path.join('settings.json'), 'w').write("{}")
+        """如果settings.json不存在则构造一个字典"""
+        if not os.path.isfile(self.settings_path):
+            open(self.settings_path, 'w').write("{}")
         """读取settings.json文件"""
-        with open(os.path.join('settings.json'), 'r') as file:
+        with open(self.settings_path, 'r') as file:
             read_settings = json.loads(file.read())
         return read_settings
 
@@ -27,7 +29,10 @@ class SettingConfig():
         if type(Read.get('Epub')) is not bool:
             Read['Epub'] = True
 
-        if type(Read.get('Thread_Pool')) is not int:
+        if type(Read.get('Pool')) is not int or Read.get('Pool') == "":
+            Read['Pool'] = 6
+
+        if type(Read.get('Thread_Pool')) is not int or Read.get('Thread_Pool') == "":
             Read['Thread_Pool'] = 6
             
         if type(Read.get('help')) is not str or Read.get('help') == "":
