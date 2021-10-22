@@ -14,22 +14,13 @@ class Download():
     def __init__(self):
         self.bookid = ''
         self.bookName = ""
-        self.novel_intro = ""
-        self.time = time.strftime('%Y-%m-%d',time.localtime(time.time()))
-        self.path_config = os.path.join("config", self.bookName)
-        self.path_novel = os.path.join("novel", self.bookName)
+        self.get_ = getdict.get_dict_value
         self.Read = config_file.SettingConfig().ReadSetting()
         self.pool = self.Read.get('Thread_Pool')
         self.Multithreading = self.Read.get('Multithreading')
-        self.get_ = getdict.get_dict_value
+        self.time = time.strftime('%Y-%m-%d',time.localtime(time.time()))
 
-    def os_mkdir(self, path_):
-        if not os.path.exists(path_):
-            os.mkdir(path_)
 
-    def os_mkdirs(self, path_1, path_2):
-        if not os.path.exists(os.path.join(path_1, path_2)):
-            os.mkdir(os.path.join(path_1, path_2))
 
     def intro_info(self):
         """打印小说信息"""
@@ -42,8 +33,8 @@ class Download():
         write_intros = novel_intros
         write_intros += '简介信息\n{}'.format(self.novel_intro)
         """保存小说信息到配置文件"""
-        with open(os.path.join("config", self.bookName, "0.txt"), 'w', encoding='utf-8') as fb:
-            fb.write(f"\n简介信息:\n{write_intros}\n")
+        path = os.path.join("config", self.bookName, "0.txt")
+        API_URL.WRITE(path, 'w', f"\n简介信息:\n{write_intros}\n")
 
         return novel_intros
 
@@ -63,12 +54,12 @@ class Download():
                 for novel_intro in self.get_(novel_info, 'longIntro').split("\n") if re.search(r'\S', novel_intro) != None])
 
         """检查 novel config文件夹是否存在主目录"""
-        self.os_mkdir("novel")
-        self.os_mkdir("config")
+        API_URL.OS_MKDIR("novel")
+        API_URL.OS_MKDIR("config")
 
         """检查config文件夹里是否存在对应小说配置文件"""
-        if not os.path.isdir(os.path.join("config", self.bookName)):
-            os.makedirs(os.path.join("config", self.bookName))
+        if not os.path.isdir(API_URL.CONFIG_PATH(self.bookName)):
+            os.makedirs(API_URL.CONFIG_PATH(self.bookName))
         print(self.intro_info())
 
     def filedir(self):
@@ -76,7 +67,7 @@ class Download():
         meragefiledir = os.path.join("config", self.bookName)
         filenames = os.listdir(meragefiledir)  # 获取文本名
         filenames.sort(key=lambda x: int(x.split('.')[0]))  # 按照数字顺序排序文本
-        file = open(os.path.join("novel", f'{self.bookName}.txt'), 'a', encoding='UTF-8')
+        file = API_URL.WRITE(API_URL.SAVE_BOOK_PATH(self.bookName), 'a')
 
         """遍历文件名"""
         for filename in filenames:
@@ -93,7 +84,7 @@ class Download():
 
     def os_meragefiledir(self):
         """路径：\config\bookname"""
-        meragefiledir = os.path.join("config", self.bookName)
+        meragefiledir = API_URL.CONFIG_PATH(self.bookName)
         """获取当前文件夹中的文件名称列表"""
         self.filenames = os.listdir(meragefiledir)
         return self.filenames
@@ -111,8 +102,7 @@ class Download():
         )
         title_body = f"\n\n\n{self.title}\n\n{body}"  # 标题加正文
         """标题和正文信息存储到number.txt并保存\config\bookName中"""
-        with open(os.path.join("config", self.bookName, f"{len_number}.txt"), 'a', newline='') as fb:
-            fb.write(title_body)
+        API_URL.WRITE(API_URL.CONFIG_TEXT_PATH(self.bookName, len_number), 'w', title_body)
         time.sleep(0.1)
         return '{}下载成功'.format(self.title)
 
@@ -155,9 +145,8 @@ class Download():
                 else:
                     self.download2epub(BOOKID)
                 # print("第{}本\t书名:{}序号:{}".format(len(BookidList), data['title'],BOOKID))
-                open(f"{TagName}分类.txt{self.time}", 'w', encoding='utf-8')
-                with open(f"{TagName}分类.txt{self.time}", 'a', encoding='utf-8') as f:
-                    f.write(BOOKID + '\n')
+                # API_URL.WRITE(f"{TagName}分类.txt{self.time}", 'w')
+                API_URL.WRITE(f"{TagName}分类.txt{self.time}", 'a', f'{BOOKID}\n')
                 
 
     def ThreadPool(self):
@@ -177,7 +166,8 @@ class Download():
         else:
             print('\n\n提示：[red]文本已是最新内容！')
         # 清除旧文本内容，合并缓存章节并写入
-        open(os.path.join("novel", self.bookName + '.txt'), 'w', encoding='utf-8').close()
+        
+        open(API_URL.SAVE_BOOK_PATH(self.bookName), 'w')
         self.filedir()
         print(f'\n小说 {self.bookName} 下载完成')
 
