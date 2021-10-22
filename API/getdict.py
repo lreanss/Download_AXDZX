@@ -9,10 +9,19 @@ def GET(api_url):
     headers = {'User_Agent': random.choice(
         Read.get('USER_AGENT_LIST'))}
     try:
-        result = requests.get(api_url, headers=headers)
-        return result.json()
+        return requests.get(api_url, headers=headers).json()
     except Exception as e:
-        print("get请求错误: %s" % e)
+        print("post请求错误:", e)
+        
+def POST(api_url, data=None):
+    Read = SettingConfig().ReadSetting()
+    """封装get方法"""
+    headers = {'User_Agent': random.choice(
+        Read.get('USER_AGENT_LIST'))}
+    try:
+        return requests.post(api_url, data, headers=headers).json()
+    except Exception as e:
+        print("post请求错误:", e)
 
 def get_dict_value(date, keys, default=None):
     keys_list = keys.split('.')
