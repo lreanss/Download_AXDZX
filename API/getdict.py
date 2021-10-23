@@ -1,6 +1,6 @@
 import random
 import requests
-from .config_file import SettingConfig
+from .setting import SettingConfig
 
 
 def GET(api_url):
@@ -12,7 +12,8 @@ def GET(api_url):
         return requests.get(api_url, headers=headers).json()
     except Exception as e:
         print("post请求错误:", e)
-        
+
+
 def POST(api_url, data=None):
     Read = SettingConfig().ReadSetting()
     """封装get方法"""
@@ -22,6 +23,7 @@ def POST(api_url, data=None):
         return requests.post(api_url, data, headers=headers).json()
     except Exception as e:
         print("post请求错误:", e)
+
 
 def get_dict_value(date, keys, default=None):
     keys_list = keys.split('.')

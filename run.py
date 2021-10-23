@@ -1,7 +1,6 @@
 from API import *
 
 
-
 def get(prompt, default=None):
     while True:
         ret = input(prompt)
@@ -9,7 +8,8 @@ def get(prompt, default=None):
             return ret
         elif default is not None:
             return default
-        
+
+
 def shell_book(inputs):
     """通过小说ID下载单本小说"""
     if len(inputs) >= 2:
@@ -34,7 +34,8 @@ def shell_search_book(inputs):
         print(f'下载耗时:{round(end - start, 2)} 秒')
     else:
         print('未输入书名')
-        
+
+
 def shell_Multithreading(inputs):
     if Read.get('Multithreading'):
         Read['Multithreading'] = False
@@ -44,7 +45,8 @@ def shell_Multithreading(inputs):
         Read['Multithreading'] = True
         Setting.WriteSettings(Read)
         print("已设置为多线程")
-        
+
+
 def shell_epub(inputs):
     """设置布尔值，默认为True"""
     if Read.get('Epub'):
@@ -57,7 +59,8 @@ def shell_epub(inputs):
         Read['Epub'] = True
         Setting.WriteSettings(Read)
         print("已设置为下载TXT")
-        
+
+
 def get_pool(inputs):
     if len(inputs) >= 2:
         if inputs[1].isdigit():
@@ -70,7 +73,8 @@ def get_pool(inputs):
             print("设置失败，输入信息不是数字")
     else:
         print("默认线程为", Downloader.Pool)
-        
+
+
 def shell_list_class(inputs):
     if len(inputs) >= 2:
         dict_number = inputs[1]
@@ -80,6 +84,7 @@ def shell_list_class(inputs):
             Downloader.download_tags(dict_number, Read.get('Epub'))
     else:
         print(Read.get('tag'))
+
 
 def shell_list(inputs):
     start = time.time()
@@ -103,7 +108,8 @@ def shell_list(inputs):
             print(f'下载耗时:{round(end - start, 2)} 秒')
     end = time.time()
     print(f'下载耗时:{round(end - start, 2)} 秒')
-            
+
+
 def shell():
     print(Read.get('help'))
     if len(sys.argv) > 1:
@@ -133,13 +139,14 @@ def shell():
             print(inputs[0], '不是有效命令')
         inputs = re.split('\\s+', get('>').strip())
 
+
 if __name__ == '__main__':
     Downloader = Download()
-    
+
     Setting = SettingConfig()
-    
+
     Setting.setup_config()
-    
+
     Read = Setting.ReadSetting()
-    
+
     shell()
