@@ -18,7 +18,7 @@ def shell_book(inputs):
             Downloader.get_bookid(inputs[1])
             Downloader.ThreadPool()
         else:
-            Downloader.download2epub(inputs[1])
+            EpubDownload.download2epub(inputs[1])
         end = time.time()
         print(f'下载耗时:{round(end - start, 2)} 秒')
     else:
@@ -40,10 +40,12 @@ def shell_Multithreading(inputs):
     if Read.get('Multithreading'):
         Read['Multithreading'] = False
         Setting.WriteSettings(Read)
+        print(Read.get('Multithreading')) 
         print("已设置为多进程")
     else:
         Read['Multithreading'] = True
         Setting.WriteSettings(Read)
+        print(Read.get('Multithreading'))
         print("已设置为多线程")
 
 
@@ -72,7 +74,7 @@ def get_pool(inputs):
         else:
             print("设置失败，输入信息不是数字")
     else:
-        print("默认线程为", Downloader.Pool)
+        print("默认线程为", Read.get('Thread_Pool'))
 
 
 def shell_list_class(inputs):
@@ -81,10 +83,18 @@ def shell_list_class(inputs):
         if not Read.get('tag').get(dict_number):
             print(f"{dict_number} 标签号不存在\n", Read.get('tag'))
         else:
-            Downloader.download_tags(dict_number, Read.get('Epub'))
+            Downloader.download_tags(dict_number)
     else:
         print(Read.get('tag'))
 
+def shell_ranking(inputs):
+    if len(inputs) >= 2:
+        ranking_num = inputs[1]
+        Downloader.ranking(ranking_num)
+    else:
+        ranking_dict = {'周榜': '1', '月榜': '2', '总榜': '3'}
+        for key, Value in ranking_dict.items():
+            print('{}:\t\t\t{}'.format(key, Value))
 
 def shell_list(inputs):
     start = time.time()
@@ -127,7 +137,9 @@ def shell():
             shell_book(inputs)
         elif inputs[0] == 'n' or inputs[0] == '--name':
             shell_search_book(inputs)
-        elif inputs[0] == 'o' or inputs[0] == '--all':
+        elif inputs[0] == 'r' or inputs[0] == '--rank':
+            shell_ranking(inputs)
+        elif inputs[0] == 'u' or inputs[0] == '--updata':
             shell_list(inputs)
         elif inputs[0] == 'p' or inputs[0] == '--pool':
             get_pool(inputs)

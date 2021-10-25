@@ -9,19 +9,29 @@ SEARCH_API = 'http://api.aixdzs.com/book/search?query={}'
 
 
 def strip(path):
-    """清洗掉Windows系统非法文件夹名字的字符串"""
-    path = re.sub(r'[？?\*|“<>:/]', '', str(path))
-    return path
+    return re.sub(r'[？?\*|“<>:/]', '', str(path))
 def CONFIG_PATH(bookName):
     return os.path.join("config", bookName)
 def SAVE_BOOK_PATH(bookName):
     return os.path.join("novel", '{}.txt'.format(bookName))
 def CONFIG_TEXT_PATH(bookName, chap_number):
     return os.path.join("config", bookName, '{}.txt'.format(chap_number))
+# def save_epub_path(bookName):
+#     return os.path.join("epub", bookName, f'{bookName}.yaml')
+
+def save_epub_path(bookName):
+    return os.path.join("epub", bookName, f'{bookName}.json')
+def save_epub_config_path(bookName, chapid):
+    return os.path.join("epub", bookName, 'text', f'{chapid}.xhtml')
 def OS_MKDIR(path):
     if not os.path.exists(path):
         os.mkdir(path)
-        
+def OS_MKEDIRS(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
+def OS_MKNOD(path):
+    if not os.path.exists(path):
+        os.mknod(path)
 def WRITE(PATH, mode, info=None):
     if info is not None:
         try:
@@ -33,9 +43,17 @@ def WRITE(PATH, mode, info=None):
                 file.writelines(info)
     else:
         try:
-            file =  open(PATH, f'{mode}', encoding='UTF-8')
-            return file
+            return open(PATH, f'{mode}', encoding='UTF-8')
         except (UnicodeEncodeError, UnicodeDecodeError) as e:
             print(e)
-            file =  open(PATH, f'{mode}', encoding='gbk')
-            return file
+            return open(PATH, f'{mode}', encoding='gbk')
+def READ_FILE(PATH):
+    try:
+        with open(PATH, 'r+', encoding='UTF-8') as file:
+            return file.read()
+    except (UnicodeEncodeError, UnicodeDecodeError) as e:
+        print(e)
+        with open(PATH, 'r+', encoding='gbk') as file:
+            return file.read()
+        
+     

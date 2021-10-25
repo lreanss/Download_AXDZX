@@ -11,7 +11,7 @@ def GET(api_url):
     try:
         return requests.get(api_url, headers=headers).json()
     except Exception as e:
-        print("post请求错误:", e)
+        print("get请求错误:", e)
 
 
 def POST(api_url, data=None):

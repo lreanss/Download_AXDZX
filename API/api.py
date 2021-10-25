@@ -1,23 +1,21 @@
 import re
 import time
 import os
-import yaml
 from rich import print
-from ebooklib import epub
 from functools import partial
 from rich.progress import track
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from API import API_URL, setting, getdict
+from API import API_URL, setting, getdict, Epub
 
 
-class Download():
+class Download:
     def __init__(self):
         self.bookid = ''
         self.bookName = ""
+        self.epub = Epub.EpubDownload()
         self.get_ = getdict.get_dict_value
         self.Read = setting.SettingConfig().ReadSetting()
         self.pool = self.Read.get('Thread_Pool')
-        self.Multithreading = self.Read.get('Multithreading')
         self.time = time.strftime('%Y-%m-%d', time.localtime(time.time()))
 
     def intro_info(self):
@@ -123,9 +121,30 @@ class Download():
             self.get_bookid(bookid)
             self.ThreadPool()
         else:
-            self.download2epub(bookid)
+            self.epub.download2epub(bookid)
 
-    def download_tags(self, dict_number, Epub):
+    def ranking(self, ranking_num):
+        bookid_list = []
+        Response = getdict.GET('http://api.aixdzs.com/ranking/{}'.format(ranking_num))
+        for data in self.get_(Response, 'ranking').get('books'):
+            for key, Value in data.items():
+                if key == 'title':
+                    print('\n\n{}:\t\t\t{}'.format(key, Value))
+                    continue
+                book_info = '{}:\t\t\t{}'.format(key, Value) if len(
+                    key) <= 6 else '{}:\t\t{}'.format(key, Value)
+                print(book_info)
+            bookid_list.append(self.get_(data, '_id'))
+        for BOOKID in bookid_list:
+            self.get_bookid(BOOKID)
+            self.ThreadPool()
+            # bookid, bookName, authorname, intro, cover, tag, followerCount, zt, updated, lastchapter = (
+            #         self.get_(data, '_id'), self.get_(data, 'title'), self.get_(data, 'author'), 
+            #         self.get_(data, 'shortIntro'), self.get_(data, 'cover'),  self.get_(data, 'cat'), 
+            #         self.get_(data, 'followerCount'),  self.get_(data, 'zt'), self.get_(data, 'updated'), 
+            #         self.get_(data, 'lastchapter'))
+
+    def download_tags(self, dict_number):
         TagName, page, BookidList = (
             self.Read.get('tag').get(dict_number), 1, [])
         print(f"开始下载 {TagName}分类")
@@ -140,23 +159,25 @@ class Download():
                 BOOKID = data['_id']
                 BookidList.append(BOOKID)
                 print("第{}本\n".format(len(BookidList)))
-                if Epub:
+                if self.Read.get('Epub'):
                     self.get_bookid(BOOKID)
                     self.ThreadPool()
                 else:
-                    self.download2epub(BOOKID)
+                    self.epub.download2epub(BOOKID)
                 # print("第{}本\t书名:{}序号:{}".format(len(BookidList), data['title'],BOOKID))
                 # API_URL.WRITE(f"{TagName}分类.txt{self.time}", 'w')
                 API_URL.WRITE(f"{TagName}分类.txt{self.time}",
                               'a', f'{BOOKID}\n')
 
     def ThreadPool(self):
-        if not self.Multithreading:
-            print('开始下载[yellow][多进程]')
-            executor = ProcessPoolExecutor(max_workers=self.pool)
-        else:
+        if self.Read.get('Multithreading'):
             print('开始下载[yellow][多线程]')
+            # print('多线程', self.Read.get('Multithreading'))
             executor = ThreadPoolExecutor(max_workers=self.pool)
+        elif not self.Read.get('Multithreading'):
+            print('开始下载[yellow][多进程]')
+            # print('多进程', self.Read.get('Multithreading'))
+            executor = ProcessPoolExecutor(max_workers=self.pool)
         task_list = []
         for url in self.continue_chap():
             len_number = url.split('/')[1]
@@ -188,84 +209,3 @@ class Download():
                 continue
             _list_.append(url)
         return _list_
-
-    def writeEpubPoint(self, downloaded_list):
-        save_epub_path = os.path.join(
-            "epub", self.bookName, f"{self.bookName}.yaml")
-        with open(save_epub_path, "w", encoding="utf-8") as yaml_file:
-            yaml.dump(downloaded_list, yaml_file, allow_unicode=True)
-
-    def readEpubPoint(self):
-        downloadedList = []
-        save_epub_path = os.path.join(
-            "epub", self.bookName, f"{self.bookName}.yaml")
-        if os.path.exists(save_epub_path):
-            with open(save_epub_path, "r", encoding="utf-8") as yaml_file:
-                downloadedList = yaml.load(yaml_file.read())
-        return downloadedList
-
-    def download2epub(self, bookid):
-        self.get_bookid(bookid)
-        default_style = '''
-            body {font-size:100%;}
-            p{
-                font-family: Auto;
-                text-indent: 2em;
-            }
-            h1{
-                font-style: normal;
-                font-size: 20px;
-                font-family: Auto;
-            }      
-            '''
-        ic = None
-        # TODO: 创建一个EPUB文件
-        if not os.path.exists('./epub'):
-            os.mkdir('./epub')
-        if not os.path.exists('./epub/' + self.bookName):
-            os.mkdir('./epub/' + self.bookName)
-        downloadedList = self.readEpubPoint()
-        C = [None] * len(self.chapters_id_list)
-        book = epub.EpubBook()
-        book.set_identifier(self.bookid)
-        book.set_title(self.bookName)
-        book.set_language('zh-CN')
-        book.add_author(self.authorName)
-        ic = epub.EpubHtml(title='简介', file_name='intro.xhtml', lang='zh-CN')
-        ic.content = '<html><head></head><body><h1>简介</h1><p>' + self.novel_intro + \
-            '</p>' + '<p>系统标签：' + self.novel_tag + '</p></body></html>'
-        book.add_item(ic)
-
-        default_css = epub.EpubItem(uid="style_default", file_name="style/default.css", media_type="text/css",
-                                    content=default_style)
-        book.add_item(default_css)
-        x = 0
-        for chapterid in track(self.chapters_id_list):
-            """断点下载，跳过已经存在本地的章节id"""
-            if chapterid in downloadedList:
-                continue
-            chapters = getdict.GET(
-                f'http://api.aixdzs.com/chapter/{chapterid}')
-
-            c1 = ''
-            chapter_title = self.get_(chapters, 'chapter.title')
-            print("{}: {}".format(self.bookName, chapter_title))
-            text = chapters['chapter']['body']  # 获取正文
-            text_list = text.split('\n')
-            for t in text_list:
-                if chapter_title in t:  # 在正文中移除标题
-                    continue
-                if '[img' in t[:5]:
-                    continue
-                t = t.strip()
-                c1 += '<p>' + t + '</p>'
-            C[x] = epub.EpubHtml(title=chapter_title, file_name='chapter_' +
-                                 chapterid + '.xhtml', lang='zh-CN', uid='chapter_' + chapterid)
-            # c2 = self.download_insert_pict(book,text = text, chapterid=chapterid)
-            C[x].content = '<h1>' + chapter_title + '</h1>' + c1
-            C[x].add_item(default_css)
-            downloadedList.append(chapterid)
-            x += 1
-
-        else:
-            print("全本小说已经下载完成")
