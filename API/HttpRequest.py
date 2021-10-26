@@ -16,13 +16,23 @@ def GET(api_url):
 
 def POST(api_url, data=None):
     Read = SettingConfig().ReadSetting()
-    """封装get方法"""
+    """封装post方法"""
     headers = {'User_Agent': random.choice(
         Read.get('USER_AGENT_LIST'))}
     try:
         return requests.post(api_url, data, headers=headers).json()
     except Exception as e:
         print("post请求错误:", e)
+
+def PUT(api_url, data=None):
+    Read = SettingConfig().ReadSetting()
+    """封装put方法"""
+    headers = {'User_Agent': random.choice(
+        Read.get('USER_AGENT_LIST'))}
+    try:
+        return requests.put(api_url, data, headers=headers).json()
+    except Exception as e:
+        print("put请求错误:", e)
 
 
 def get_dict_value(date, keys, default=None):

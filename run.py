@@ -9,6 +9,15 @@ def get(prompt, default=None):
         elif default is not None:
             return default
 
+def agreed_read_readme():
+    if Read.get('agreed_to_readme') != 'yes':
+        print(Read.get('agree_terms'))
+        confirm = get('>').strip()
+        if confirm == 'yes' or confirm == '同意':
+            Read['agreed_to_readme'] = 'yes'
+            Setting.WriteSettings(Read)
+        else:
+            sys.exit()
 
 def shell_book(inputs):
     """通过小说ID下载单本小说"""
@@ -122,6 +131,7 @@ def shell_list(inputs):
 
 def shell():
     print(Read.get('help'))
+    agreed_read_readme()
     if len(sys.argv) > 1:
         inputs = sys.argv[1:]
     else:
@@ -160,5 +170,6 @@ if __name__ == '__main__':
     Setting.setup_config()
 
     Read = Setting.ReadSetting()
-
+    
+    
     shell()

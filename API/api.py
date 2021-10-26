@@ -1,19 +1,17 @@
-import re
-import time
-import os
 from rich import print
 from functools import partial
 from rich.progress import track
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from API import API_URL, setting, getdict, Epub
-
+from API import ApiConstants, setting, HttpRequest, Epub
+from .ReadWriteFile import *
 
 class Download:
     def __init__(self):
         self.bookid = ''
         self.bookName = ""
         self.epub = Epub.EpubDownload()
-        self.get_ = getdict.get_dict_value
+        self.get_ = HttpRequest.get_dict_value
+        self.request = HttpRequest.GET
         self.Read = setting.SettingConfig().ReadSetting()
         self.pool = self.Read.get('Thread_Pool')
         self.time = time.strftime('%Y-%m-%d', time.localtime(time.time()))
@@ -30,16 +28,16 @@ class Download:
         write_intros += '简介信息\n{}'.format(self.novel_intro)
         """保存小说信息到配置文件"""
         path = os.path.join("config", self.bookName, "0.txt")
-        API_URL.WRITE(path, 'w', f"\n简介信息:\n{write_intros}\n")
+        WRITE(path, 'w', f"\n简介信息:\n{write_intros}\n")
 
         return novel_intros
 
     def get_bookid(self, bookid):
         self.bookid = bookid
-        novel_info = getdict.GET(API_URL.BOOK_INFO_API.format(self.bookid))
+        novel_info = self.request(ApiConstants.BOOK_INFO_API.format(self.bookid))
         """将接口获取到的小说信息存储在变量中"""
         self.bookName, self.authorName, self.isFinish, self.cover, self.charCount = (
-            API_URL.strip(self.get_(novel_info, 'title')), self.get_(
+            ApiConstants.strip(self.get_(novel_info, 'title')), self.get_(
                 novel_info, 'author'), self.get_(novel_info, 'zt'),
             self.get_(novel_info,  'cover'),  self.get_(novel_info, 'wordCount'))
 
@@ -50,12 +48,12 @@ class Download:
                                     for novel_intro in self.get_(novel_info, 'longIntro').split("\n") if re.search(r'\S', novel_intro) != None])
 
         """检查 novel config文件夹是否存在主目录"""
-        API_URL.OS_MKDIR("novel")
-        API_URL.OS_MKDIR("config")
+        ApiConstants.OS_MKDIR("novel")
+        ApiConstants.OS_MKDIR("config")
 
         """检查config文件夹里是否存在对应小说配置文件"""
-        if not os.path.isdir(API_URL.CONFIG_PATH(self.bookName)):
-            os.makedirs(API_URL.CONFIG_PATH(self.bookName))
+        if not os.path.isdir(ApiConstants.CONFIG_PATH(self.bookName)):
+            os.makedirs(ApiConstants.CONFIG_PATH(self.bookName))
         print(self.intro_info())
 
     def filedir(self):
@@ -63,7 +61,7 @@ class Download:
         meragefiledir = os.path.join("config", self.bookName)
         filenames = os.listdir(meragefiledir)  # 获取文本名
         filenames.sort(key=lambda x: int(x.split('.')[0]))  # 按照数字顺序排序文本
-        file = API_URL.WRITE(API_URL.SAVE_BOOK_PATH(self.bookName), 'a')
+        file = WRITE(ApiConstants.SAVE_BOOK_PATH(self.bookName), 'a')
 
         """遍历文件名"""
         for filename in filenames:
@@ -80,7 +78,7 @@ class Download:
 
     def os_meragefiledir(self):
         """路径：\config\bookname"""
-        meragefiledir = API_URL.CONFIG_PATH(self.bookName)
+        meragefiledir = ApiConstants.CONFIG_PATH(self.bookName)
         """获取当前文件夹中的文件名称列表"""
         self.filenames = os.listdir(meragefiledir)
         return self.filenames
@@ -91,21 +89,21 @@ class Download:
         chapterid ([str]): [章节ID]
         len_number ([int]): [章节ID顺序号]
         """
-        chapters = getdict.GET(API_URL.CHAPTER_API.format(chapterid))
+        chapters = self.request(ApiConstants.CHAPTER_API.format(chapterid))
         self.title, body = (
             self.get_(chapters, 'chapter.title'),
             self.get_(chapters, 'chapter.body')
         )
         title_body = f"\n\n\n{self.title}\n\n{body}"  # 标题加正文
         """标题和正文信息存储到number.txt并保存\config\bookName中"""
-        API_URL.WRITE(API_URL.CONFIG_TEXT_PATH(
+        WRITE(ApiConstants.CONFIG_TEXT_PATH(
             self.bookName, len_number), 'w', title_body)
         time.sleep(0.1)
         return '{}下载成功'.format(self.title)
 
     def get_type(self):
         self.type_dict = {}
-        for number, sort in enumerate(getdict.GET(API_URL.GET_TYPE_INFO)['male']):
+        for number, sort in enumerate(self.request(ApiConstants.GET_TYPE_INFO)['male']):
             print(sort)
             number += 1
             major = self.get_(sort, 'major')
@@ -115,7 +113,7 @@ class Download:
 
     def search_book(self, bookname, Epub):
         """bookname     小说书名"""
-        for data in getdict.GET(API_URL.SEARCH_API.format(bookname))['books']:
+        for data in self.request(ApiConstants.SEARCH_API.format(bookname))['books']:
             bookid = self.get_(data, '_id')
         if Epub:
             self.get_bookid(bookid)
@@ -125,7 +123,7 @@ class Download:
 
     def ranking(self, ranking_num):
         bookid_list = []
-        Response = getdict.GET('http://api.aixdzs.com/ranking/{}'.format(ranking_num))
+        Response = self.request('http://api.aixdzs.com/ranking/{}'.format(ranking_num))
         for data in self.get_(Response, 'ranking').get('books'):
             for key, Value in data.items():
                 if key == 'title':
@@ -150,8 +148,8 @@ class Download:
         print(f"开始下载 {TagName}分类")
         while True:
             page += 20
-            Response = getdict.GET(
-                API_URL.TAG_API.format(dict_number, TagName, page))
+            Response = self.request(
+                ApiConstants.TAG_API.format(dict_number, TagName, page))
             if not Response['books']:
                 print(BookidList)
                 return BookidList
@@ -165,8 +163,8 @@ class Download:
                 else:
                     self.epub.download2epub(BOOKID)
                 # print("第{}本\t书名:{}序号:{}".format(len(BookidList), data['title'],BOOKID))
-                # API_URL.WRITE(f"{TagName}分类.txt{self.time}", 'w')
-                API_URL.WRITE(f"{TagName}分类.txt{self.time}",
+                # WRITE(f"{TagName}分类.txt{self.time}", 'w')
+                WRITE(f"{TagName}分类.txt{self.time}",
                               'a', f'{BOOKID}\n')
 
     def ThreadPool(self):
@@ -189,16 +187,16 @@ class Download:
             print('\n\n提示：[red]文本已是最新内容！')
         # 清除旧文本内容，合并缓存章节并写入
         try:
-            open(API_URL.SAVE_BOOK_PATH(self.bookName), 'w')
+            open(ApiConstants.SAVE_BOOK_PATH(self.bookName), 'w')
             self.filedir()
             print(f'\n小说 {self.bookName} 下载完成')
         except FileNotFoundError as e:
-            API_URL.WRITE('下载失败.txt', 'a', self.bookName)
+            WRITE('下载失败.txt', 'a', self.bookName)
             print(e, '文件名不规范，无法创建！')
 
     def continue_chap(self):
         """通过目录接口获取小说章节ID"""
-        Response = getdict.GET(API_URL.BOOK_CATALOGUE.format(self.bookid))
+        Response = self.request(ApiConstants.BOOK_CATALOGUE.format(self.bookid))
         self.chapters_id_list = [chapters["link"] for chapters in self.get_(
             Response, 'mixToc.chapters')]  # 将小说章节ID存储到列表中
         _list_ = []

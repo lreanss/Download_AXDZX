@@ -17,6 +17,7 @@ def WRITE(PATH, mode, info=None):
         except (UnicodeEncodeError, UnicodeDecodeError) as e:
             print(e)
             return open(PATH, f'{mode}', encoding='gbk')
+            
 def READ_FILE(PATH):
     try:
         with open(PATH, 'r+', encoding='UTF-8') as file:

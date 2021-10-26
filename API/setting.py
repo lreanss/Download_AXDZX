@@ -1,37 +1,44 @@
 import json
 import os
+from .ReadWriteFile import *
 
 
 class SettingConfig():
-
+    path = None
+    config_path = None
+    
     def __init__(self):
         self.path = os.getcwd()
-
+        self.config_path = os.path.join(self.path, 'settings.json')
+        
     def WriteSettings(self, info):
         """更新settings.json文件"""
-        with open(os.path.join('settings.json'), 'w', encoding='utf-8') as file:
-            write_setting_info = file.write(
-                json.dumps(info))
-        return write_setting_info
+        file = WRITE(self.config_path, 'w')
+        return file.write(json.dumps(info))
 
     def ReadSetting(self):
-        if not os.path.isfile(os.path.join(self.path, 'settings.json')):
-            open(os.path.join('settings.json'), 'w').write("{}")
+        if not os.path.isfile(self.config_path):
+            open(self.config_path, 'w').write("{}")
         """读取settings.json文件"""
-        with open(os.path.join('settings.json'), 'r') as file:
-            read_settings = json.loads(file.read())
-        return read_settings
+        read_file = WRITE(self.config_path, 'r')
+        return json.loads(read_file.read())
 
     def setup_config(self):
         Read = self.ReadSetting()
-        if type(Read.get('Epub')) is not bool:
+        if type(Read.get('Epub')) is not bool or Read.get('Epub') == "":
             Read['Epub'] = True
 
-        if type(Read.get('Multithreading')) is not bool:
+        if type(Read.get('Multithreading')) is not bool or Read.get('Multithreading') == "":
             Read['Multithreading'] = True
 
-        if type(Read.get('Thread_Pool')) is not int:
-            Read['Thread_Pool'] = 6
+        if type(Read.get('Thread_Pool')) is not int or Read.get('Thread_Pool') == "":
+            Read['Thread_Pool'] = 12
+
+        if type(Read.get('agreed_to_readme')) is not str or Read.get('agreed_to_readme') == "":
+            Read['agreed_to_readme'] = 'No'
+
+        if type(Read.get('agree_terms')) is not str or Read.get('agree_terms') == "":
+            Read['agree_terms'] = '是否以仔细阅读且同意LICENSE中叙述免责声明\n如果同意声明，请输入英文 \"yes\" 或者中文 \"同意\" 后按Enter建，如果不同意请关闭此程式'
 
         if type(Read.get('help')) is not str or Read.get('help') == "":
             Read['help'] = 'https://m.aixdzs.com/\nd | bookid\t\t\t\t\t———输入书籍序号下载单本小说\nt | tagid\t\t\t\t\t———输入分类号批量下载分类小说\n' + \

@@ -2,21 +2,22 @@ import re
 import os
 from ebooklib import epub
 from rich.progress import track
-from API import API_URL, getdict, setting
+from API import ApiConstants, HttpRequest, setting
 
 
 class EpubDownload():
     def __init__(self):
         self.bookid = ''
         self.bookName = ''
-        self.get_ = getdict.get_dict_value
+        self.get_ = HttpRequest.get_dict_value
+        self.request = HttpRequest.GET
         self.Read = setting.SettingConfig().ReadSetting()
 
     def get_bookid(self):
-        novel_info = getdict.GET(API_URL.BOOK_INFO_API.format(self.bookid))
+        novel_info = self.request(ApiConstants.BOOK_INFO_API.format(self.bookid))
         """将接口获取到的小说信息存储在变量中"""
         self.bookName, self.authorName, self.isFinish, self.cover, self.charCount = (
-            API_URL.strip(self.get_(novel_info, 'title')), self.get_(
+            ApiConstants.strip(self.get_(novel_info, 'title')), self.get_(
                 novel_info, 'author'), self.get_(novel_info, 'zt'),
             self.get_(novel_info,  'cover'),  self.get_(novel_info, 'wordCount'))
 
@@ -28,7 +29,7 @@ class EpubDownload():
 
 
     # def writeEpubPoint(self, chapid, chap_id):
-    #     API_URL.WRITE(API_URL.save_epub_config_path(self.bookName, chap_id), 'a', f"{chapid}、")
+    #     ApiConstants.WRITE(ApiConstants.save_epub_config_path(self.bookName, chap_id), 'a', f"{chapid}、")
                       
     def readEpubPoint(self):
         return ''.join(os.listdir(os.path.join("epub", self.bookName, 'text')))
@@ -49,12 +50,12 @@ class EpubDownload():
             }      
             '''
         ic = None
-        Response = getdict.GET(API_URL.BOOK_CATALOGUE.format(self.bookid))
+        Response = self.request(ApiConstants.BOOK_CATALOGUE.format(self.bookid))
         self.chapters_id_list = [chapters["link"] for chapters in self.get_(
             Response, 'mixToc.chapters')]
-        API_URL.OS_MKDIR('epub')
-        API_URL.OS_MKEDIRS(os.path.join('epub', self.bookName))
-        API_URL.OS_MKEDIRS(os.path.join('epub', self.bookName, 'text'))
+        ApiConstants.OS_MKDIR('epub')
+        ApiConstants.OS_MKEDIRS(os.path.join('epub', self.bookName))
+        ApiConstants.OS_MKEDIRS(os.path.join('epub', self.bookName, 'text'))
         C = [None] * len(self.chapters_id_list)
         book = epub.EpubBook()
         book.set_identifier(self.bookid)
@@ -71,17 +72,13 @@ class EpubDownload():
         book.add_item(default_css)
         num = 0
         x = 0
-        
-        
-        
-        
         for chapterid in track(self.chapters_id_list):
             num += 1
             """断点下载，跳过已经存在本地的章节id"""
             chap_id = chapterid.split('/')[1]
             if chap_id in self.readEpubPoint():
                 continue
-            chapters = getdict.GET(API_URL.CHAPTER_API.format(chapterid))
+            chapters = self.request(ApiConstants.CHAPTER_API.format(chapterid))
 
             c1 = ''
             chapter_title = self.get_(chapters, 'chapter.title')
@@ -98,13 +95,9 @@ class EpubDownload():
                 if '[img' in title[:5]:
                     continue
                 title = title.strip()
-                
-                
-                
-                
                 c1 += '<p>' + title + '</p>'
                 
-                API_URL.WRITE(API_URL.save_epub_config_path(self.bookName, chap_id), 'w', c1)
+                ApiConstants.WRITE(ApiConstants.save_epub_config_path(self.bookName, chap_id), 'w', c1)
             C[x] = epub.EpubHtml(title=chapter_title, file_name='chapter_' +
                                  chapterid + '.xhtml', lang='zh-CN', uid='chapter_' + chapterid)
             print(C[x])
@@ -112,7 +105,7 @@ class EpubDownload():
             C[x].content = '<h1>' + chapter_title + '</h1>' + c1
             C[x].add_item(default_css)
             # self.writeEpubPoint(chapterid)
-            epub.write_epub(API_URL.save_epub_path(self.bookName), book)
+            epub.write_epub(ApiConstants.save_epub_path(self.bookName), book)
             # downloadedList.append(chapterid)
             x += 1
 
